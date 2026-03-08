@@ -108,7 +108,6 @@ export default function PreviewPage({ params }: PreviewPageProps) {
                       src={currentUser.logoUrl}
                       alt="Firmalogo"
                       className="max-h-full max-w-full object-contain"
-                      style={{ filter: 'brightness(0) invert(1)' }}
                     />
                   </div>
                 </div>
