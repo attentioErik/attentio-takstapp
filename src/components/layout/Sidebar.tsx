@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,17 +11,14 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Building2,
   LogOut,
   Sun,
   Moon,
   ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { mockUser, mockReports } from '@/lib/mock-data';
 import { getInitials } from '@/lib/utils';
 import { useSession, signOut } from 'next-auth/react';
 
@@ -40,9 +37,22 @@ interface SidebarProps {
 export function Sidebar({ isDark, onToggleTheme }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
-  const draftCount = mockReports.filter((r) => r.status === 'draft').length;
   const { data: session } = useSession();
   const isAdmin = (session?.user as { isAdmin?: boolean } | undefined)?.isAdmin === true;
+  const [company, setCompany] = useState<string>('');
+  const [logoUrl, setLogoUrl] = useState<string>('');
+
+  useEffect(() => {
+    fetch('/api/users/me')
+      .then((r) => r.json())
+      .then(({ user }) => {
+        if (user?.company) setCompany(user.company);
+        if (user?.logoUrl) setLogoUrl(user.logoUrl);
+      })
+      .catch(() => {});
+  }, []);
+
+  const displayName = company || 'Takstapp';
 
   return (
     <motion.aside
@@ -50,12 +60,21 @@ export function Sidebar({ isDark, onToggleTheme }: SidebarProps) {
       transition={{ duration: 0.25, ease: 'easeInOut' }}
       className="hidden lg:flex flex-col h-screen sticky top-0 bg-sidebar border-r border-sidebar-border overflow-hidden flex-shrink-0"
     >
-      {/* Logo */}
+      {/* Logo / Company */}
       <div className="flex items-center h-16 px-4 flex-shrink-0">
-        <motion.div className="flex items-center gap-3 overflow-hidden">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
-            <Building2 className="w-5 h-5 text-primary-foreground" />
-          </div>
+        <motion.div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
+          {logoUrl ? (
+            <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center flex-shrink-0 overflow-hidden p-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+            </div>
+          ) : (
+            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
+              <span className="text-primary-foreground font-bold text-sm">
+                {displayName.slice(0, 2).toUpperCase()}
+              </span>
+            </div>
+          )}
           <AnimatePresence>
             {!collapsed && (
               <motion.span
@@ -63,14 +82,14 @@ export function Sidebar({ isDark, onToggleTheme }: SidebarProps) {
                 animate={{ opacity: 1, width: 'auto' }}
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.2 }}
-                className="font-bold text-lg text-sidebar-foreground whitespace-nowrap overflow-hidden"
+                className="font-bold text-sm text-sidebar-foreground whitespace-nowrap overflow-hidden truncate"
               >
-                Takstapp
+                {displayName}
               </motion.span>
             )}
           </AnimatePresence>
         </motion.div>
-        <div className="ml-auto">
+        <div className="ml-2 flex-shrink-0">
           <Button
             variant="ghost"
             size="icon"
@@ -93,7 +112,6 @@ export function Sidebar({ isDark, onToggleTheme }: SidebarProps) {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = !item.coming && (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)));
-          const showDraftBadge = item.href === '/reports' && draftCount > 0;
 
           const itemContent = (
             <motion.div
@@ -126,19 +144,6 @@ export function Sidebar({ isDark, onToggleTheme }: SidebarProps) {
                   Kommer
                 </span>
               )}
-              {showDraftBadge && !collapsed && !item.coming && (
-                <Badge
-                  variant="secondary"
-                  className={cn(
-                    'ml-auto text-xs',
-                    isActive
-                      ? 'bg-sidebar-primary-foreground/20 text-sidebar-primary-foreground'
-                      : 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  )}
-                >
-                  {draftCount}
-                </Badge>
-              )}
             </motion.div>
           );
 
@@ -153,7 +158,7 @@ export function Sidebar({ isDark, onToggleTheme }: SidebarProps) {
           );
         })}
 
-        {/* Admin link — only shown for admin users */}
+        {/* Admin link */}
         {isAdmin && (
           <Link href="/admin">
             <motion.div
@@ -186,7 +191,7 @@ export function Sidebar({ isDark, onToggleTheme }: SidebarProps) {
 
       <Separator className="bg-sidebar-border" />
 
-      {/* Bottom: theme + user */}
+      {/* Bottom: theme + user + branding */}
       <div className="p-3 space-y-1">
         {/* Theme toggle */}
         <button
@@ -216,7 +221,7 @@ export function Sidebar({ isDark, onToggleTheme }: SidebarProps) {
           </AnimatePresence>
         </button>
 
-        {/* User */}
+        {/* User / logout */}
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
           className={cn(
@@ -234,10 +239,10 @@ export function Sidebar({ isDark, onToggleTheme }: SidebarProps) {
                 animate={{ opacity: 1, width: 'auto' }}
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.2 }}
-                className="overflow-hidden"
+                className="overflow-hidden flex-1 text-left"
               >
-                <p className="text-sm font-medium text-sidebar-foreground whitespace-nowrap">{session?.user?.name || 'Bruker'}</p>
-                <p className="text-xs text-sidebar-foreground/60 whitespace-nowrap">{session?.user?.email || ''}</p>
+                <p className="text-sm font-medium text-sidebar-foreground whitespace-nowrap truncate">{session?.user?.name || 'Bruker'}</p>
+                <p className="text-xs text-sidebar-foreground/60 whitespace-nowrap truncate">{session?.user?.email || ''}</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -245,6 +250,27 @@ export function Sidebar({ isDark, onToggleTheme }: SidebarProps) {
             <LogOut className="w-4 h-4 text-sidebar-foreground/50 ml-auto flex-shrink-0" />
           )}
         </button>
+
+        {/* Attentio branding */}
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              <a
+                href="https://www.attentio.no"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-center text-[10px] text-sidebar-foreground/30 hover:text-sidebar-foreground/60 transition-colors py-1.5"
+              >
+                Laget av attentio
+              </a>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.aside>
   );

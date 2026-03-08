@@ -52,8 +52,15 @@ export default function SettingsPage() {
         publicKey: process.env.NEXT_PUBLIC_UPLOADCARE_PUBLIC_KEY!,
         store: 'auto',
       });
-      setLogoUrl(`${result.cdnUrl}-/quality/smart/`);
-      toast.success('Logo lastet opp');
+      const url = `${result.cdnUrl}-/quality/smart/`;
+      setLogoUrl(url);
+      // Save immediately to DB so it shows in reports without clicking "Lagre"
+      await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, logoUrl: url }),
+      });
+      toast.success('Logo lastet opp og lagret');
     } catch {
       toast.error('Kunne ikke laste opp logo');
     } finally {

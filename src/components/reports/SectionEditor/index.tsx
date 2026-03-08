@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, Save, Trash2, GripVertical } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trash2, GripVertical, Check, Loader2 } from 'lucide-react';
 import { BuildingSectionData, ConditionGrade, MoistureMeasurement } from '@/types';
 import { BUILDING_SECTION_CATEGORIES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -22,24 +22,50 @@ interface SectionEditorProps {
   isLoading?: boolean;
 }
 
-export function SectionEditor({ section, onUpdate, onDelete, isLoading }: SectionEditorProps) {
+type SaveStatus = 'idle' | 'saving' | 'saved';
+
+export function SectionEditor({ section, onUpdate, onDelete }: SectionEditorProps) {
   const [expanded, setExpanded] = useState(false);
   const [localData, setLocalData] = useState(section);
-  const [isDirty, setIsDirty] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isFirstRender = useRef(true);
 
   const categoryConfig = BUILDING_SECTION_CATEGORIES.find((c) => c.id === section.category);
   const needsCauseConsequence = localData.conditionGrade === 'TG2' || localData.conditionGrade === 'TG3';
   const needsRepairCost = localData.conditionGrade === 'TG3';
 
+  const doSave = useCallback(
+    (data: BuildingSectionData) => {
+      setSaveStatus('saving');
+      onUpdate(data);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSaveStatus('saved'), 400);
+      savedTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2500);
+    },
+    [onUpdate]
+  );
+
   const update = (field: keyof BuildingSectionData, value: unknown) => {
-    setLocalData((prev) => ({ ...prev, [field]: value }));
-    setIsDirty(true);
+    const next = { ...localData, [field]: value } as BuildingSectionData;
+    setLocalData(next);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setSaveStatus('saving');
+    debounceRef.current = setTimeout(() => doSave(next), 800);
   };
 
-  const save = () => {
-    onUpdate(localData);
-    setIsDirty(false);
-  };
+  // Skip auto-save on initial mount
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+    }
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, []);
 
   return (
     <div className={cn(
@@ -56,17 +82,9 @@ export function SectionEditor({ section, onUpdate, onDelete, isLoading }: Sectio
 
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="font-medium text-foreground truncate">{localData.name}</p>
-              {isDirty && (
-                <span className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" title="Ikke lagret" />
-              )}
-            </div>
+            <p className="font-medium text-foreground truncate">{localData.name}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               {categoryConfig?.name || localData.category}
-              {localData.images && localData.images.length > 0 && (
-                <span className="ml-2 text-muted-foreground/70">· {localData.images.length} bilde{localData.images.length !== 1 ? 'r' : ''}</span>
-              )}
             </p>
           </div>
 
@@ -258,16 +276,32 @@ export function SectionEditor({ section, onUpdate, onDelete, isLoading }: Sectio
                   Fjern seksjon
                 </Button>
 
-                <Button
-                  type="button"
-                  size="sm"
-                  className="rounded-xl gap-2"
-                  onClick={save}
-                  disabled={isLoading}
-                >
-                  <Save className="w-4 h-4" />
-                  {isLoading ? 'Lagrer...' : 'Lagre'}
-                </Button>
+                <AnimatePresence mode="wait">
+                  {saveStatus === 'saving' && (
+                    <motion.span
+                      key="saving"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                    >
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Lagrer...
+                    </motion.span>
+                  )}
+                  {saveStatus === 'saved' && (
+                    <motion.span
+                      key="saved"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400"
+                    >
+                      <Check className="w-3 h-3" />
+                      Lagret
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </motion.div>
