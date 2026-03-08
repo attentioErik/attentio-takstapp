@@ -15,6 +15,7 @@ import {
   LogOut,
   Sun,
   Moon,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { mockUser, mockReports } from '@/lib/mock-data';
 import { getInitials } from '@/lib/utils';
+import { useSession } from 'next-auth/react';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, coming: false },
@@ -39,6 +41,8 @@ export function Sidebar({ isDark, onToggleTheme }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const draftCount = mockReports.filter((r) => r.status === 'draft').length;
+  const { data: session } = useSession();
+  const isAdmin = (session?.user as { isAdmin?: boolean } | undefined)?.isAdmin === true;
 
   return (
     <motion.aside
@@ -148,6 +152,36 @@ export function Sidebar({ isDark, onToggleTheme }: SidebarProps) {
             </Link>
           );
         })}
+
+        {/* Admin link — only shown for admin users */}
+        {isAdmin && (
+          <Link href="/admin">
+            <motion.div
+              whileHover={{ x: collapsed ? 0 : 2 }}
+              className={cn(
+                'flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors',
+                pathname.startsWith('/admin')
+                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer'
+              )}
+            >
+              <ShieldCheck className="w-5 h-5 flex-shrink-0" />
+              <AnimatePresence>
+                {!collapsed && (
+                  <motion.span
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-sm font-medium whitespace-nowrap overflow-hidden flex-1"
+                  >
+                    Admin
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </Link>
+        )}
       </nav>
 
       <Separator className="bg-sidebar-border" />

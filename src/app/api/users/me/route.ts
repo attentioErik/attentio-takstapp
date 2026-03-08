@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, users } from '@/lib/db';
 import { eq } from 'drizzle-orm';
+import bcrypt from 'bcryptjs';
 
 const DEMO_USER_ID = 'a0000000-0000-0000-0000-000000000001';
 
@@ -16,6 +17,8 @@ export async function GET() {
           name: 'Demo Bruker',
           company: 'Takstfirma AS',
           certifications: 'Statsautorisert takstmann',
+          passwordHash: await bcrypt.hash('demo123', 10),
+          isAdmin: true,
         })
         .returning();
     }

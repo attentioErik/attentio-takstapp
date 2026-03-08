@@ -15,6 +15,8 @@ export const users = pgTable('users', {
   signatureUrl: text('signature_url'),
   avatarUrl: text('avatar_url'),
   logoUrl: text('logo_url'),
+  passwordHash: text('password_hash'),
+  isAdmin: boolean('is_admin').default(false),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

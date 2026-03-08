@@ -47,12 +47,12 @@ export default function SettingsPage() {
     if (!file) return;
     setLogoUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
-      if (!res.ok) throw new Error('Feil');
-      const data = await res.json();
-      setLogoUrl(data.url);
+      const { uploadFile } = await import('@uploadcare/upload-client');
+      const result = await uploadFile(file, {
+        publicKey: process.env.NEXT_PUBLIC_UPLOADCARE_PUBLIC_KEY!,
+        store: 'auto',
+      });
+      setLogoUrl(`${result.cdnUrl}-/quality/smart/`);
       toast.success('Logo lastet opp');
     } catch {
       toast.error('Kunne ikke laste opp logo');
