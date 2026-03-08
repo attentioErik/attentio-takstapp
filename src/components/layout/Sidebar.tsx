@@ -15,6 +15,7 @@ import {
   Sun,
   Moon,
   ShieldCheck,
+  ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import { useSession, signOut } from 'next-auth/react';
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, coming: false },
   { href: '/reports', label: 'Rapporter', icon: FileText, coming: false },
+  { href: '/befaring', label: 'Befaring', icon: ClipboardList, coming: false },
   { href: '/templates', label: 'Maler', icon: BookTemplate, coming: true },
   { href: '/settings', label: 'Innstillinger', icon: Settings, coming: false },
 ];

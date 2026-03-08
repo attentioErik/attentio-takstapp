@@ -127,6 +127,34 @@ export const reportImages = pgTable('report_images', {
 export type ReportImage = typeof reportImages.$inferSelect;
 export type NewReportImage = typeof reportImages.$inferInsert;
 
+export const inspections = pgTable('inspections', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  address: text('address').notNull(),
+  propertyType: text('property_type'),
+  inspectionDate: timestamp('inspection_date').defaultNow(),
+  status: text('status').default('in_progress'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const inspectionNotes = pgTable('inspection_notes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  inspectionId: uuid('inspection_id').notNull().references(() => inspections.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
+  sectionId: text('section_id').notNull(),
+  noteType: text('note_type').notNull(),
+  content: text('content').notNull(),
+  audioUrl: text('audio_url'),
+  duration: integer('duration'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export type Inspection = typeof inspections.$inferSelect;
+export type NewInspection = typeof inspections.$inferInsert;
+export type InspectionNote = typeof inspectionNotes.$inferSelect;
+export type NewInspectionNote = typeof inspectionNotes.$inferInsert;
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Report = typeof reports.$inferSelect;
