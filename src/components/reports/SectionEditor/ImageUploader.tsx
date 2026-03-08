@@ -1,76 +1,103 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ImagePlus, X, Loader2 } from 'lucide-react';
-import { SectionImage } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { uploadFile } from '@uploadcare/upload-client';
 
-interface ImageUploaderProps {
-  images: SectionImage[];
-  onChange: (images: SectionImage[]) => void;
+interface ReportImage {
+  id: string;
+  cdnUrl: string;
+  filename?: string | null;
+  caption?: string | null;
+  uploadcareUuid: string;
 }
 
-export function ImageUploader({ images, onChange }: ImageUploaderProps) {
+interface ImageUploaderProps {
+  reportId: string;
+  sectionId: string;
+}
+
+export function ImageUploader({ reportId, sectionId }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [images, setImages] = useState<ReportImage[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchImages = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/images?reportId=${reportId}&sectionId=${sectionId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setImages(data.images || []);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [reportId, sectionId]);
+
+  useEffect(() => {
+    fetchImages();
+  }, [fetchImages]);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-
     setUploading(true);
-    const newImages: SectionImage[] = [];
 
     for (const file of Array.from(files)) {
       if (!file.type.startsWith('image/')) continue;
-
       try {
-        const formData = new FormData();
-        formData.append('file', file);
+        const result = await uploadFile(file, {
+          publicKey: process.env.NEXT_PUBLIC_UPLOADCARE_PUBLIC_KEY!,
+          store: 'auto',
+        });
 
-        const res = await fetch('/api/upload', {
+        const res = await fetch('/api/images', {
           method: 'POST',
-          body: formData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reportId,
+            sectionId,
+            uploadcareUuid: result.uuid,
+            cdnUrl: result.cdnUrl,
+            filename: file.name,
+          }),
         });
 
-        if (!res.ok) throw new Error('Opplasting feilet');
-
+        if (!res.ok) throw new Error('Lagring feilet');
         const data = await res.json();
-        newImages.push({
-          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          url: data.url,
-          caption: '',
-          sortOrder: images.length + newImages.length,
-        });
-      } catch {
-        // If upload fails (e.g. no Vercel Blob token), use local object URL as fallback
-        const localUrl = URL.createObjectURL(file);
-        newImages.push({
-          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          url: localUrl,
-          caption: '',
-          sortOrder: images.length + newImages.length,
-        });
-        toast.warning('Bilde lagret midlertidig – koble til Vercel Blob for permanent lagring');
+        setImages((prev) => [...prev, data.image]);
+      } catch (err) {
+        console.error(err);
+        toast.error('Opplasting feilet');
       }
     }
 
-    onChange([...images, ...newImages]);
     setUploading(false);
-
     if (inputRef.current) inputRef.current.value = '';
   };
 
-  const removeImage = (id: string) => {
-    onChange(images.filter((img) => img.id !== id));
+  const removeImage = async (img: ReportImage) => {
+    await fetch(`/api/images/${img.id}`, { method: 'DELETE' });
+    setImages((prev) => prev.filter((i) => i.id !== img.id));
   };
 
-  const updateCaption = (id: string, caption: string) => {
-    onChange(images.map((img) => (img.id === id ? { ...img, caption } : img)));
+  const updateCaption = async (img: ReportImage, caption: string) => {
+    setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, caption } : i)));
+    await fetch(`/api/images/${img.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ caption }),
+    });
   };
+
+  const thumbUrl = (cdnUrl: string) => `${cdnUrl}-/resize/400x/-/quality/smart/`;
+
+  if (loading) return <div className="h-16 animate-pulse bg-muted rounded-xl" />;
 
   return (
     <div className="space-y-3">
@@ -86,11 +113,7 @@ export function ImageUploader({ images, onChange }: ImageUploaderProps) {
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
         >
-          {uploading ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <ImagePlus className="w-3.5 h-3.5" />
-          )}
+          {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImagePlus className="w-3.5 h-3.5" />}
           {uploading ? 'Laster opp...' : 'Last opp bilder'}
         </Button>
         <input
@@ -118,13 +141,13 @@ export function ImageUploader({ images, onChange }: ImageUploaderProps) {
                 <div className="relative aspect-[4/3] rounded-xl overflow-hidden border bg-muted">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={img.url}
-                    alt={img.caption || 'Bilde'}
+                    src={thumbUrl(img.cdnUrl)}
+                    alt={img.caption || img.filename || 'Bilde'}
                     className="w-full h-full object-cover"
                   />
                   <button
                     type="button"
-                    onClick={() => removeImage(img.id)}
+                    onClick={() => removeImage(img)}
                     className={cn(
                       'absolute top-1.5 right-1.5 w-6 h-6 rounded-full',
                       'bg-black/60 text-white flex items-center justify-center',
@@ -136,7 +159,7 @@ export function ImageUploader({ images, onChange }: ImageUploaderProps) {
                 </div>
                 <Input
                   value={img.caption || ''}
-                  onChange={(e) => updateCaption(img.id, e.target.value)}
+                  onChange={(e) => updateCaption(img, e.target.value)}
                   placeholder="Bildekommentar (valgfritt)"
                   className="mt-1.5 rounded-lg text-xs h-7 px-2"
                 />

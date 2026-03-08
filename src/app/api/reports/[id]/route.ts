@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, reports, buildingSections } from '@/lib/db';
+import { db, reports, buildingSections, reportImages } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 
 export async function GET(
@@ -16,7 +16,27 @@ export async function GET(
       .select()
       .from(buildingSections)
       .where(eq(buildingSections.reportId, id));
-    return NextResponse.json({ report: { ...report, sections } });
+
+    // Fetch images for all sections from report_images table
+    const sectionImages = await db
+      .select()
+      .from(reportImages)
+      .where(eq(reportImages.reportId, id));
+
+    // Attach images to their respective sections
+    const sectionsWithImages = sections.map((section) => ({
+      ...section,
+      images: sectionImages
+        .filter((img) => img.sectionId === section.id)
+        .map((img) => ({
+          id: img.id,
+          url: `${img.cdnUrl}-/quality/smart/`,
+          caption: img.caption,
+          sortOrder: 0,
+        })),
+    }));
+
+    return NextResponse.json({ report: { ...report, sections: sectionsWithImages } });
   } catch (error) {
     console.error('GET /api/reports/[id] error:', error);
     return NextResponse.json({ error: 'Serverfeil' }, { status: 500 });

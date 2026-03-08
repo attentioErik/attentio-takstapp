@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, Save, Trash2, GripVertical } from 'lucide-react';
-import { BuildingSectionData, ConditionGrade, MoistureMeasurement, SectionImage } from '@/types';
+import { BuildingSectionData, ConditionGrade, MoistureMeasurement } from '@/types';
 import { BUILDING_SECTION_CATEGORIES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -240,8 +240,8 @@ export function SectionEditor({ section, onUpdate, onDelete, isLoading }: Sectio
               {/* Image uploader */}
               <div className="border-t pt-5">
                 <ImageUploader
-                  images={(localData.images as SectionImage[]) || []}
-                  onChange={(imgs) => update('images', imgs)}
+                  reportId={section.reportId}
+                  sectionId={section.id}
                 />
               </div>
 

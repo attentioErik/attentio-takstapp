@@ -108,6 +108,21 @@ export const sectionTemplates = pgTable('section_templates', {
   checklistItems: jsonb('checklist_items'),
 });
 
+export const reportImages = pgTable('report_images', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  reportId: uuid('report_id').notNull().references(() => reports.id, { onDelete: 'cascade' }),
+  sectionId: text('section_id').notNull(),
+  uploadcareUuid: text('uploadcare_uuid').notNull(),
+  cdnUrl: text('cdn_url').notNull(),
+  filename: text('filename'),
+  caption: text('caption'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export type ReportImage = typeof reportImages.$inferSelect;
+export type NewReportImage = typeof reportImages.$inferInsert;
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Report = typeof reports.$inferSelect;
