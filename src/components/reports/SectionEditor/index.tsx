@@ -263,7 +263,7 @@ export function SectionEditor({ section, onUpdate, onDelete, isLoading }: Sectio
                   size="sm"
                   className="rounded-xl gap-2"
                   onClick={save}
-                  disabled={!isDirty || isLoading}
+                  disabled={isLoading}
                 >
                   <Save className="w-4 h-4" />
                   {isLoading ? 'Lagrer...' : 'Lagre'}

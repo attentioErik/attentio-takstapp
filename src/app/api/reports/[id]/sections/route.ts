@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, buildingSections } from '@/lib/db';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { BuildingSectionData } from '@/types';
 
 export async function GET(
@@ -29,12 +29,24 @@ export async function PUT(
     const body = await req.json();
     const { sections } = body as { sections: BuildingSectionData[] };
 
-    // Delete existing sections
-    await db.delete(buildingSections).where(eq(buildingSections.reportId, id));
+    // Get existing section IDs for this report
+    const existing = await db
+      .select({ id: buildingSections.id })
+      .from(buildingSections)
+      .where(eq(buildingSections.reportId, id));
+    const existingIds = new Set(existing.map((s) => s.id));
 
-    // Insert new sections
-    if (sections && sections.length > 0) {
-      const toInsert = sections.map((s, i) => ({
+    // Delete sections that are no longer in the payload
+    const incomingIds = new Set((sections || []).map((s) => s.id));
+    const toDelete = [...existingIds].filter((eid) => !incomingIds.has(eid));
+    if (toDelete.length > 0) {
+      await db.delete(buildingSections).where(inArray(buildingSections.id, toDelete));
+    }
+
+    // Upsert each section — UPDATE if it exists, INSERT if new
+    for (let i = 0; i < (sections || []).length; i++) {
+      const s = sections[i];
+      const data = {
         reportId: id,
         category: s.category,
         subcategory: s.subcategory || null,
@@ -48,15 +60,24 @@ export async function PUT(
         repairCostMin: s.repairCostMin || null,
         repairCostMax: s.repairCostMax || null,
         moistureMeasurements: s.moistureMeasurements || null,
-        images: s.images || null,
         sortOrder: i,
         isRequired: s.isRequired ?? false,
-      }));
-      const newSections = await db.insert(buildingSections).values(toInsert).returning();
-      return NextResponse.json({ sections: newSections });
+        updatedAt: new Date(),
+      };
+
+      if (existingIds.has(s.id)) {
+        await db.update(buildingSections).set(data).where(eq(buildingSections.id, s.id));
+      } else {
+        await db.insert(buildingSections).values(data);
+      }
     }
 
-    return NextResponse.json({ sections: [] });
+    const updatedSections = await db
+      .select()
+      .from(buildingSections)
+      .where(eq(buildingSections.reportId, id));
+
+    return NextResponse.json({ sections: updatedSections });
   } catch (error) {
     console.error('PUT sections error:', error);
     return NextResponse.json({ error: 'Serverfeil' }, { status: 500 });
