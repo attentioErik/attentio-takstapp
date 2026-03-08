@@ -4,11 +4,22 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Plus, FileEdit, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { mockReports } from '@/lib/mock-data';
+import { Report } from '@/lib/db/schema';
 
-export function QuickActions() {
-  const draftReports = mockReports.filter((r) => r.status === 'draft');
-  const inProgressReports = mockReports.filter((r) => r.status === 'in_progress');
+interface QuickActionsProps {
+  reports: Report[];
+}
+
+export function QuickActions({ reports }: QuickActionsProps) {
+  const activeReports = reports
+    .filter((r) => r.status === 'in_progress' || r.status === 'draft')
+    .sort((a, b) => {
+      const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+      const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+      return bTime - aTime;
+    });
+
+  const mostRecent = activeReports[0];
 
   return (
     <motion.div
@@ -26,20 +37,22 @@ export function QuickActions() {
           </Button>
         </Link>
 
-        {inProgressReports.length > 0 && (
-          <Link href={`/reports/${inProgressReports[0].id}/edit`} className="block">
-            <Button variant="outline" className="w-full rounded-xl gap-2 h-11" size="lg">
-              <FileEdit className="w-5 h-5" />
-              Fortsett utkast ({inProgressReports[0].propertyAddress})
+        {mostRecent && (
+          <Link href={`/reports/${mostRecent.id}/edit`} className="block">
+            <Button variant="outline" className="w-full rounded-xl gap-2 h-11 text-left" size="lg">
+              <FileEdit className="w-5 h-5 flex-shrink-0" />
+              <span className="truncate">
+                Fortsett utkast – {mostRecent.propertyAddress}
+              </span>
             </Button>
           </Link>
         )}
 
-        {draftReports.length > 0 && (
-          <Link href={`/reports/${draftReports[0].id}/edit`} className="block">
-            <Button variant="outline" className="w-full rounded-xl gap-2 h-11" size="lg">
+        {activeReports.length > 1 && (
+          <Link href="/reports" className="block">
+            <Button variant="ghost" className="w-full rounded-xl gap-2 h-11" size="lg">
               <FileEdit className="w-5 h-5" />
-              {draftReports.length} utkast{draftReports.length > 1 ? '' : ''} venter
+              {activeReports.length} utkast venter
             </Button>
           </Link>
         )}

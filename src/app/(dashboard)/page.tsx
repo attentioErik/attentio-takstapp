@@ -76,7 +76,7 @@ export default function DashboardPage() {
           <RecentReports reports={reports.slice(0, 5)} />
         </div>
         <div>
-          <QuickActions />
+          <QuickActions reports={reports} />
         </div>
       </div>
     </motion.div>
