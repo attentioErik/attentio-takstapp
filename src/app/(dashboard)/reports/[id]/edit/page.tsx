@@ -3,7 +3,7 @@
 import { use, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Save, Eye, Sparkles } from 'lucide-react';
+import { ArrowLeft, Plus, Save, Eye } from 'lucide-react';
 import { useReport } from '@/hooks/useReport';
 import { useSections } from '@/hooks/useSections';
 import { SectionEditor } from '@/components/reports/SectionEditor';
@@ -126,22 +126,6 @@ export default function EditReportPage({ params }: EditPageProps) {
         {sections.length > 0 && (
           <TGDistributionBadges sections={sections} />
         )}
-      </div>
-
-      {/* AI Assistant shortcut */}
-      <div className="bg-gradient-to-r from-violet-50 to-blue-50 dark:from-violet-900/20 dark:to-blue-900/20 rounded-2xl border border-violet-100 dark:border-violet-800 p-4 flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center flex-shrink-0">
-          <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-        </div>
-        <div className="flex-1">
-          <p className="font-medium text-violet-900 dark:text-violet-100 text-sm">AI-assistent</p>
-          <p className="text-xs text-violet-700 dark:text-violet-300">
-            Analyser befaringsnotater automatisk med Claude AI
-          </p>
-        </div>
-        <Button variant="outline" size="sm" className="rounded-xl border-violet-200 text-violet-700 dark:border-violet-700 dark:text-violet-300">
-          Kjør AI
-        </Button>
       </div>
 
       {/* Sections */}

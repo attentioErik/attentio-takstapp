@@ -245,6 +245,26 @@ export default function PreviewPage({ params }: PreviewPageProps) {
                           </span>
                         </div>
                       )}
+
+                      {/* Section images */}
+                      {section.images && (section.images as Array<{ id: string; url: string; caption?: string }>).length > 0 && (
+                        <div className="mt-4">
+                          <p className="font-medium text-muted-foreground mb-2">Bilder:</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {(section.images as Array<{ id: string; url: string; caption?: string }>).map((img) => (
+                              <div key={img.id} className="avoid-break">
+                                <div className="aspect-[4/3] rounded-lg overflow-hidden border bg-muted">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={img.url} alt={img.caption || 'Bilde'} className="w-full h-full object-cover" />
+                                </div>
+                                {img.caption && (
+                                  <p className="text-xs text-muted-foreground mt-1 text-center italic">{img.caption}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

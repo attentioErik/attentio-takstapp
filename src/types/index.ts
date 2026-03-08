@@ -3,6 +3,13 @@ export type ReportType = 'tilstandsrapport' | 'verditakst' | 'forhandstakst';
 export type ReportStatus = 'draft' | 'in_progress' | 'completed' | 'archived';
 export type PropertyType = 'enebolig' | 'rekkehus' | 'leilighet' | 'fritidsbolig' | 'tomannsbolig';
 
+export interface SectionImage {
+  id: string;
+  url: string;
+  caption?: string;
+  sortOrder?: number;
+}
+
 export interface MoistureMeasurement {
   location: string;
   value: number;
@@ -63,6 +70,7 @@ export interface BuildingSectionData {
   repairCostMin?: number | null;
   repairCostMax?: number | null;
   moistureMeasurements?: MoistureMeasurement[] | null;
+  images?: SectionImage[] | null;
   sortOrder?: number;
   isRequired?: boolean;
   createdAt?: Date | string | null;

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Building2, Bell, Shield, Save } from 'lucide-react';
+import { User, Building2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -110,27 +110,6 @@ export default function SettingsPage() {
               rows={3}
               className="rounded-xl resize-none"
             />
-          </div>
-        </div>
-      </div>
-
-      {/* API Keys */}
-      <div className="bg-card rounded-2xl border p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Shield className="w-5 h-5 text-muted-foreground" />
-          <h2 className="font-semibold">API og integrasjoner</h2>
-        </div>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Anthropic API-nøkkel</Label>
-            <Input
-              type="password"
-              placeholder="sk-ant-..."
-              className="rounded-xl font-mono"
-            />
-            <p className="text-xs text-muted-foreground">
-              Kreves for AI-assistert befaringsanalyse. Hent fra console.anthropic.com
-            </p>
           </div>
         </div>
       </div>

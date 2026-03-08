@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, Save, Trash2, GripVertical } from 'lucide-react';
-import { BuildingSectionData, ConditionGrade, MoistureMeasurement } from '@/types';
+import { BuildingSectionData, ConditionGrade, MoistureMeasurement, SectionImage } from '@/types';
 import { BUILDING_SECTION_CATEGORIES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ConditionGradeSelector } from './ConditionGradeSelector';
 import { MoistureMeasurementTable } from './MoistureMeasurement';
+import { ImageUploader } from './ImageUploader';
 import { TGBadge } from '../TGBadge';
 
 interface SectionEditorProps {
@@ -63,6 +64,9 @@ export function SectionEditor({ section, onUpdate, onDelete, isLoading }: Sectio
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               {categoryConfig?.name || localData.category}
+              {localData.images && localData.images.length > 0 && (
+                <span className="ml-2 text-muted-foreground/70">· {localData.images.length} bilde{localData.images.length !== 1 ? 'r' : ''}</span>
+              )}
             </p>
           </div>
 
@@ -232,6 +236,14 @@ export function SectionEditor({ section, onUpdate, onDelete, isLoading }: Sectio
                 measurements={(localData.moistureMeasurements as MoistureMeasurement[]) || []}
                 onChange={(measurements) => update('moistureMeasurements', measurements)}
               />
+
+              {/* Image uploader */}
+              <div className="border-t pt-5">
+                <ImageUploader
+                  images={(localData.images as SectionImage[]) || []}
+                  onChange={(imgs) => update('images', imgs)}
+                />
+              </div>
 
               {/* Actions */}
               <div className="flex items-center justify-between pt-2 border-t">
