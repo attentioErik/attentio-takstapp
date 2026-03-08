@@ -21,6 +21,12 @@ export async function GET() {
           isAdmin: true,
         })
         .returning();
+    } else if (!user.passwordHash) {
+      [user] = await db
+        .update(users)
+        .set({ passwordHash: await bcrypt.hash('demo123', 10), isAdmin: true })
+        .where(eq(users.id, DEMO_USER_ID))
+        .returning();
     }
     return NextResponse.json({ user });
   } catch (error) {

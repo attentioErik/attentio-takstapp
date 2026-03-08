@@ -7,8 +7,8 @@ import bcrypt from 'bcryptjs';
 const DEMO_USER_ID = 'a0000000-0000-0000-0000-000000000001';
 
 async function ensureDemoUser() {
-  const existing = await db.select().from(users).where(eq(users.id, DEMO_USER_ID)).limit(1);
-  if (existing.length === 0) {
+  const [existing] = await db.select().from(users).where(eq(users.id, DEMO_USER_ID)).limit(1);
+  if (!existing) {
     await db.insert(users).values({
       id: DEMO_USER_ID,
       email: 'demo@takstapp.no',
@@ -18,6 +18,12 @@ async function ensureDemoUser() {
       passwordHash: await bcrypt.hash('demo123', 10),
       isAdmin: true,
     });
+  } else if (!existing.passwordHash) {
+    // Backfill password hash if user existed before this column was added
+    await db.update(users).set({
+      passwordHash: await bcrypt.hash('demo123', 10),
+      isAdmin: true,
+    }).where(eq(users.id, DEMO_USER_ID));
   }
 }
 
