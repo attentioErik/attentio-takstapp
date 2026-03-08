@@ -14,6 +14,7 @@ export const users = pgTable('users', {
   certifications: text('certifications'),
   signatureUrl: text('signature_url'),
   avatarUrl: text('avatar_url'),
+  logoUrl: text('logo_url'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -69,6 +70,7 @@ export const buildingSections = pgTable('building_sections', {
   repairCostMin: integer('repair_cost_min'),
   repairCostMax: integer('repair_cost_max'),
   moistureMeasurements: jsonb('moisture_measurements'),
+  images: jsonb('images'),
   sortOrder: integer('sort_order').default(0),
   isRequired: boolean('is_required').default(true),
   createdAt: timestamp('created_at').defaultNow(),

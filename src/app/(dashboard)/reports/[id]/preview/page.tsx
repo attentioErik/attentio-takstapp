@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowLeft, Download, Edit, Printer } from 'lucide-react';
@@ -10,7 +10,6 @@ import { Separator } from '@/components/ui/separator';
 import { REPORT_TYPES, PROPERTY_TYPES, CONDITION_GRADES } from '@/lib/constants';
 import { formatDate, formatDateLong, formatCurrency } from '@/lib/utils';
 import { TGBadge } from '@/components/reports/TGBadge';
-import { mockUser } from '@/lib/mock-data';
 
 interface PreviewPageProps {
   params: Promise<{ id: string }>;
@@ -19,6 +18,19 @@ interface PreviewPageProps {
 export default function PreviewPage({ params }: PreviewPageProps) {
   const { id } = use(params);
   const { report, isLoading } = useReport(id);
+  const [currentUser, setCurrentUser] = useState<{
+    name: string;
+    company?: string;
+    certifications?: string;
+    logoUrl?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/users/me')
+      .then((r) => r.json())
+      .then(({ user }) => setCurrentUser(user))
+      .catch(() => {});
+  }, []);
 
   if (isLoading) {
     return (
@@ -87,6 +99,19 @@ export default function PreviewPage({ params }: PreviewPageProps) {
               <p className="text-primary-foreground/70 text-sm">{report.reportNumber}</p>
               {report.reportDate && (
                 <p className="text-sm font-medium mt-1">{formatDateLong(report.reportDate)}</p>
+              )}
+              {currentUser?.logoUrl && (
+                <div className="mt-3 flex items-center justify-end">
+                  <div className="h-12 max-w-[96px] flex items-center justify-end">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={currentUser.logoUrl}
+                      alt="Firmalogo"
+                      className="max-h-full max-w-full object-contain"
+                      style={{ filter: 'brightness(0) invert(1)' }}
+                    />
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -178,11 +203,11 @@ export default function PreviewPage({ params }: PreviewPageProps) {
               </div>
               <div>
                 <p className="text-muted-foreground font-medium">Takstmann</p>
-                <p className="mt-1">{mockUser.name}</p>
+                <p className="mt-1">{currentUser?.name ?? '–'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground font-medium">Sertifiseringer</p>
-                <p className="mt-1">{mockUser.certifications}</p>
+                <p className="mt-1">{currentUser?.certifications ?? '–'}</p>
               </div>
             </div>
           </section>
@@ -320,9 +345,9 @@ export default function PreviewPage({ params }: PreviewPageProps) {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Takstmann</p>
-                <p className="font-semibold mt-1">{mockUser.name}</p>
-                <p className="text-sm text-muted-foreground">{mockUser.company}</p>
-                <p className="text-sm text-muted-foreground">{mockUser.certifications}</p>
+                <p className="font-semibold mt-1">{currentUser?.name ?? '–'}</p>
+                <p className="text-sm text-muted-foreground">{currentUser?.company ?? ''}</p>
+                <p className="text-sm text-muted-foreground">{currentUser?.certifications ?? ''}</p>
               </div>
               <div className="text-right">
                 <div className="h-16 w-40 border-b-2 border-foreground mb-2" />

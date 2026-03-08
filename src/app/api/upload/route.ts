@@ -10,15 +10,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ingen fil lastet opp' }, { status: 400 });
     }
 
-    const filename = `${Date.now()}-${file.name}`;
+    const filename = `takstapp/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
 
     const blob = await put(filename, file, {
       access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
     return NextResponse.json({ url: blob.url, filename });
   } catch (error) {
     console.error('Upload error:', error);
-    return NextResponse.json({ error: 'Opplasting feilet' }, { status: 500 });
+    return NextResponse.json({ error: 'Opplasting feilet', details: String(error) }, { status: 500 });
   }
 }

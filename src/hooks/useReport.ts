@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { ReportWithSections } from '@/types';
-import { mockReports } from '@/lib/mock-data';
 
 export function useReport(id: string) {
   const [report, setReport] = useState<ReportWithSections | null>(null);
@@ -13,18 +12,13 @@ export function useReport(id: string) {
     setIsLoading(true);
     setError(null);
     try {
-      // In production, this would call the API
-      // const res = await fetch(`/api/reports/${id}`);
-      // const data = await res.json();
-
-      // Mock implementation
-      await new Promise((r) => setTimeout(r, 500));
-      const found = mockReports.find((r) => r.id === id);
-      if (!found) {
+      const res = await fetch(`/api/reports/${id}`);
+      if (!res.ok) {
         setError('Rapport ikke funnet');
-      } else {
-        setReport(found);
+        return;
       }
+      const data = await res.json();
+      setReport(data.report);
     } catch {
       setError('Kunne ikke laste rapport');
     } finally {
@@ -33,18 +27,26 @@ export function useReport(id: string) {
   }, [id]);
 
   useEffect(() => {
-    fetchReport();
-  }, [fetchReport]);
+    if (id) fetchReport();
+  }, [fetchReport, id]);
 
-  const updateReport = useCallback(async (data: Partial<ReportWithSections>) => {
-    if (!report) return;
-    try {
-      // In production: await fetch(`/api/reports/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
-      setReport((prev) => prev ? { ...prev, ...data } : null);
-    } catch {
-      throw new Error('Kunne ikke oppdatere rapport');
-    }
-  }, [report]);
+  const updateReport = useCallback(
+    async (data: Partial<ReportWithSections>) => {
+      try {
+        const res = await fetch(`/api/reports/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error('Feil ved oppdatering');
+        const result = await res.json();
+        setReport((prev) => (prev ? { ...prev, ...result.report } : null));
+      } catch {
+        throw new Error('Kunne ikke oppdatere rapport');
+      }
+    },
+    [id]
+  );
 
   return { report, isLoading, error, updateReport, refetch: fetchReport };
 }
@@ -58,8 +60,10 @@ export function useReports() {
     setIsLoading(true);
     setError(null);
     try {
-      await new Promise((r) => setTimeout(r, 600));
-      setReports(mockReports);
+      const res = await fetch('/api/reports');
+      if (!res.ok) throw new Error('Feil ved henting');
+      const data = await res.json();
+      setReports(data.reports);
     } catch {
       setError('Kunne ikke laste rapporter');
     } finally {
@@ -72,6 +76,7 @@ export function useReports() {
   }, [fetchReports]);
 
   const deleteReport = useCallback(async (id: string) => {
+    await fetch(`/api/reports/${id}`, { method: 'DELETE' });
     setReports((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
