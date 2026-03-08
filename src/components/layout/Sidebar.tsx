@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { mockUser, mockReports } from '@/lib/mock-data';
 import { getInitials } from '@/lib/utils';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, coming: false },
@@ -217,12 +217,15 @@ export function Sidebar({ isDark, onToggleTheme }: SidebarProps) {
         </button>
 
         {/* User */}
-        <div className={cn(
-          'flex items-center gap-3 rounded-xl px-3 py-2.5',
-          'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors cursor-pointer'
-        )}>
+        <button
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className={cn(
+            'flex items-center gap-3 w-full rounded-xl px-3 py-2.5',
+            'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors cursor-pointer'
+          )}
+        >
           <div className="w-8 h-8 rounded-full bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center text-xs font-bold flex-shrink-0">
-            {getInitials(mockUser.name)}
+            {getInitials(session?.user?.name || 'U')}
           </div>
           <AnimatePresence>
             {!collapsed && (
@@ -233,15 +236,15 @@ export function Sidebar({ isDark, onToggleTheme }: SidebarProps) {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <p className="text-sm font-medium text-sidebar-foreground whitespace-nowrap">{mockUser.name}</p>
-                <p className="text-xs text-sidebar-foreground/60 whitespace-nowrap">{mockUser.company}</p>
+                <p className="text-sm font-medium text-sidebar-foreground whitespace-nowrap">{session?.user?.name || 'Bruker'}</p>
+                <p className="text-xs text-sidebar-foreground/60 whitespace-nowrap">{session?.user?.email || ''}</p>
               </motion.div>
             )}
           </AnimatePresence>
           {!collapsed && (
             <LogOut className="w-4 h-4 text-sidebar-foreground/50 ml-auto flex-shrink-0" />
           )}
-        </div>
+        </button>
       </div>
     </motion.aside>
   );
