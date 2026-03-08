@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Plus, FileEdit, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Report } from '@/lib/db/schema';
+import { ReportWithSections } from '@/types';
 
 interface QuickActionsProps {
-  reports: Report[];
+  reports: ReportWithSections[];
 }
 
 export function QuickActions({ reports }: QuickActionsProps) {
