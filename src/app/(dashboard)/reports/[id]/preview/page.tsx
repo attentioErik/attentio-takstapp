@@ -23,6 +23,8 @@ export default function PreviewPage({ params }: PreviewPageProps) {
     company?: string;
     certifications?: string;
     logoUrl?: string;
+    logoUrlLight?: string;
+    headerColor?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -84,28 +86,31 @@ export default function PreviewPage({ params }: PreviewPageProps) {
       {/* Report document */}
       <div className="bg-white dark:bg-card rounded-2xl border shadow-sm overflow-hidden print:overflow-visible print:rounded-none print:border-none print:shadow-none report-preview" data-print-content>
         {/* Report header */}
-        <div className="bg-primary p-8 text-white">
+        <div
+          className="p-8 text-white"
+          style={{ backgroundColor: currentUser?.headerColor || '#1e3a5f' }}
+        >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-primary-foreground/70 text-sm font-medium uppercase tracking-widest mb-2">
+              <p className="text-white/60 text-sm font-medium uppercase tracking-widest mb-2">
                 {reportTypeConfig.name}
               </p>
               <h1 className="text-3xl font-bold mb-1">{report.propertyAddress}</h1>
-              <p className="text-primary-foreground/80">
+              <p className="text-white/70">
                 {[report.postalCode, report.city].filter(Boolean).join(' ')}
               </p>
             </div>
             <div className="text-right hidden sm:block">
-              <p className="text-primary-foreground/70 text-sm">{report.reportNumber}</p>
+              <p className="text-white/60 text-sm">{report.reportNumber}</p>
               {report.reportDate && (
-                <p className="text-sm font-medium mt-1">{formatDateLong(report.reportDate)}</p>
+                <p className="text-sm font-medium mt-1 text-white/90">{formatDateLong(report.reportDate)}</p>
               )}
-              {currentUser?.logoUrl && (
+              {(currentUser?.logoUrlLight || currentUser?.logoUrl) && (
                 <div className="mt-3 flex items-center justify-end">
                   <div className="h-12 max-w-[96px] flex items-center justify-end">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={currentUser.logoUrl}
+                      src={currentUser.logoUrlLight || currentUser.logoUrl!}
                       alt="Firmalogo"
                       className="max-h-full max-w-full object-contain"
                     />

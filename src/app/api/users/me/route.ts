@@ -47,6 +47,8 @@ export async function PATCH(req: NextRequest) {
         phone: body.phone,
         certifications: body.certifications,
         logoUrl: body.logoUrl,
+        logoUrlLight: body.logoUrlLight,
+        headerColor: body.headerColor,
         updatedAt: new Date(),
       })
       .where(eq(users.id, DEMO_USER_ID))
