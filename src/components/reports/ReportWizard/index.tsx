@@ -102,6 +102,23 @@ export function ReportWizard() {
 
       const { report } = await res.json();
 
+      // Save AI-generated sections if any
+      if (data.sections && data.sections.length > 0) {
+        await fetch(`/api/reports/${report.id}/sections`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sections: data.sections.map((s, i) => ({
+              ...s,
+              reportId: report.id,
+              id: `new-${i}`,
+              sortOrder: i,
+              isRequired: false,
+            })),
+          }),
+        });
+      }
+
       toast.success('Rapport opprettet!', {
         description: `Rapport ${report.reportNumber} er nå opprettet.`,
       });
