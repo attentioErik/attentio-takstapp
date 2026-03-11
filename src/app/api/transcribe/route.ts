@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+export const runtime = 'nodejs';
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -10,13 +12,16 @@ export async function POST(req: NextRequest) {
     const audioBuffer = await audioFile.arrayBuffer();
     const base64Audio = Buffer.from(audioBuffer).toString('base64');
 
+    // Strip codec params from mimeType (e.g. "audio/webm;codecs=opus" → "audio/webm")
+    const mimeType = (audioFile.type || 'audio/webm').split(';')[0];
+
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const result = await model.generateContent([
       {
         inlineData: {
-          mimeType: (audioFile.type || 'audio/webm') as string,
+          mimeType,
           data: base64Audio,
         },
       },
@@ -29,6 +34,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ transcription });
   } catch (error) {
     console.error('Transcription error:', error);
-    return NextResponse.json({ error: 'Transkriberingsfeil' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Transkriberingsfeil';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
