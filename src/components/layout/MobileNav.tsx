@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   FileText,
+  ClipboardList,
   BookTemplate,
   Settings,
   X,
@@ -17,6 +18,7 @@ import { Button } from '@/components/ui/button';
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/reports', label: 'Rapporter', icon: FileText },
+  { href: '/befaring', label: 'Befaring', icon: ClipboardList },
   { href: '/templates', label: 'Maler', icon: BookTemplate },
   { href: '/settings', label: 'Innstillinger', icon: Settings },
 ];

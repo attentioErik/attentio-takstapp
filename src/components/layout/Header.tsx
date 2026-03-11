@@ -15,6 +15,8 @@ const pageTitles: Record<string, string> = {
   '/': 'Dashboard',
   '/reports': 'Rapporter',
   '/reports/new': 'Ny rapport',
+  '/befaring': 'Befaring',
+  '/befaring/ny': 'Ny befaring',
   '/templates': 'Maler',
   '/settings': 'Innstillinger',
 };
@@ -27,6 +29,7 @@ export function Header({ isDark, onToggleTheme, onMenuOpen }: HeaderProps) {
     if (pathname.startsWith('/reports/') && pathname.endsWith('/edit')) return 'Rediger rapport';
     if (pathname.startsWith('/reports/') && pathname.endsWith('/preview')) return 'Forhåndsvisning';
     if (pathname.startsWith('/reports/')) return 'Rapport';
+    if (pathname.startsWith('/befaring/')) return 'Befaring';
     return 'Takstapp';
   };
 
