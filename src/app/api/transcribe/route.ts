@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Anthropic from '@anthropic-ai/sdk';
 
 export const runtime = 'nodejs';
 
@@ -13,24 +13,35 @@ export async function POST(req: NextRequest) {
     const base64Audio = Buffer.from(audioBuffer).toString('base64');
 
     // Strip codec params from mimeType (e.g. "audio/webm;codecs=opus" → "audio/webm")
-    const mimeType = (audioFile.type || 'audio/webm').split(';')[0];
+    const mediaType = (audioFile.type || 'audio/webm').split(';')[0];
 
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          mimeType,
-          data: base64Audio,
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4096,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: mediaType,
+                data: base64Audio,
+              },
+            },
+            {
+              type: 'text',
+              text: 'Transkriber dette lydopptaket til norsk tekst. Dette er notater fra en takstmann på befaring. Behold tekniske termer og beskrivelser nøyaktig. Returner kun transkripsjonen, ingen ekstra tekst.',
+            },
+          ],
         },
-      },
-      {
-        text: `Transkriber dette lydopptaket til norsk tekst. Dette er notater fra en takstmann på befaring. Behold tekniske termer og beskrivelser nøyaktig. Returner kun transkripsjonen, ingen ekstra tekst.`,
-      },
-    ]);
+      ],
+    });
 
-    const transcription = result.response.text();
+    const transcription = message.content[0].type === 'text' ? message.content[0].text : '';
     return NextResponse.json({ transcription });
   } catch (error) {
     console.error('Transcription error:', error);
