@@ -55,8 +55,9 @@ export default function BefaringDetailPage({ params }: PageProps) {
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+  const transcriptRef = useRef('');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const notesEndRef = useRef<HTMLDivElement>(null);
 
@@ -76,71 +77,85 @@ export default function BefaringDetailPage({ params }: PageProps) {
     notesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [notes, activeSection]);
 
-  const startRecording = async () => {
+  const startRecording = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error('Talegjenkjenning støttes ikke i denne nettleseren');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'nb-NO';
+    recognition.continuous = true;
+    recognition.interimResults = false;
+
+    transcriptRef.current = '';
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (event: any) => {
+      let text = '';
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          text += event.results[i][0].transcript + ' ';
+        }
+      }
+      transcriptRef.current = text.trim();
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      if (event.error === 'not-allowed') {
+        toast.error('Mikrofontilgang ble avslått');
+      }
+    };
+
+    recognition.onend = () => {
+      // Save transcript when recognition ends (after stopRecording)
+      if (transcriptRef.current) {
+        saveVoiceNote(transcriptRef.current);
+      } else {
+        toast.error('Ingen tale ble fanget opp');
+        setIsTranscribing(false);
+      }
+    };
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : 'audio/mp4';
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const audioBlob = new Blob(chunksRef.current, { type: mimeType });
-        await transcribeAndSave(audioBlob, mimeType);
-      };
-
-      mediaRecorder.start(250);
+      recognition.start();
+      recognitionRef.current = recognition;
       setIsRecording(true);
       setRecordingSeconds(0);
-
       timerRef.current = setInterval(() => {
         setRecordingSeconds((s) => s + 1);
       }, 1000);
     } catch {
-      toast.error('Mikrofon ikke tilgjengelig');
+      toast.error('Kunne ikke starte talegjenkjenning');
     }
   };
 
   const stopRecording = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    mediaRecorderRef.current?.stop();
     setIsRecording(false);
     setRecordingSeconds(0);
+    setIsTranscribing(true);
+    recognitionRef.current?.stop();
   };
 
-  const transcribeAndSave = async (audioBlob: Blob, mimeType: string) => {
-    setIsTranscribing(true);
+  const saveVoiceNote = async (transcription: string) => {
     try {
-      const formData = new FormData();
-      formData.append('audio', new File([audioBlob], 'recording.webm', { type: mimeType }));
-
-      const res = await fetch('/api/transcribe', { method: 'POST', body: formData });
-      if (!res.ok) throw new Error('Transcription failed');
-      const { transcription } = await res.json();
-      if (!transcription?.trim()) {
-        toast.error('Ingen tale ble fanget opp');
-        return;
-      }
-
       await fetch(`/api/inspections/${id}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sectionId: activeSection,
           noteType: 'voice',
-          content: transcription.trim(),
+          content: transcription,
         }),
       });
       await fetchData();
     } catch {
-      toast.error('Transkriberingsfeil – prøv igjen');
+      toast.error('Kunne ikke lagre notatet');
     } finally {
       setIsTranscribing(false);
     }
